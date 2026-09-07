@@ -13,8 +13,8 @@ dependencias de desarrollo.
 | Archivo | Para qué |
 |---|---|
 | `DelSudTotem.apk` | Instalar en una **tablet Android** como app de kiosco. |
-| `AbrirTotemKiosco.bat` | Abrir en una **PC/notebook Windows** el navegador en modo kiosco apuntando al tótem. |
-| `SellarKioscoWindows.ps1` | Opcional pero recomendado en **pantallas táctiles Windows**: sella el sistema operativo (ver abajo). |
+| `AbrirTotemKiosco.bat` | Abrir en una **PC/notebook Windows** el navegador en modo kiosco apuntando al tótem. Ya incluye el bloqueo de swipe/widgets. |
+| `SellarKioscoWindows.ps1` | Opcional, solo para bloquear ADEMÁS el teclado (Alt+Tab, tecla Windows) a nivel driver — ver abajo. |
 
 ## Android — `DelSudTotem.apk`
 
@@ -30,35 +30,47 @@ suben solos al volver la conexión.
 ## Windows — `AbrirTotemKiosco.bat`
 
 1. Descargar `AbrirTotemKiosco.bat` a cualquier carpeta de la PC.
-2. Doble clic para abrirlo.
-3. Abre Chrome (o Edge si no hay Chrome) en modo kiosco de pantalla completa contra la
-   web del tótem, y deja un vigilante en segundo plano que reabre el navegador si alguien
-   lo cierra.
+2. Doble clic para abrirlo. Va a pedir **permiso de administrador** (UAC) — aceptar.
+   Lo necesita para bloquear, antes de abrir el navegador, el swipe desde el borde y el
+   panel de *Widgets / Noticias e intereses* de Windows: en una pantalla táctil eso se
+   cuela por encima del kiosco aunque Chrome esté en `--kiosk`, sin tocar el teclado.
+3. El escritorio va a parpadear un instante (reinicia el Explorador de Windows para que
+   el bloqueo aplique al toque, sin reiniciar la PC) y después abre Chrome (o Edge si no
+   hay Chrome) en modo kiosco de pantalla completa contra la web del tótem, con un
+   vigilante en segundo plano que reabre el navegador si alguien lo cierra.
 4. Para salir: 5 toques rápidos en la esquina superior izquierda, o Alt+F4.
 
 Requiere tener **Google Chrome** (o Microsoft Edge) instalado en la PC — el `.bat` no
-instala nada, solo abre el navegador.
+instala nada más, solo bloquea esos gestos y abre el navegador.
 
 Si la pantalla es muy grande y la interfaz se ve chica, editar el archivo con el Bloc de
 notas y ajustar el número en `--force-device-scale-factor=1.5` (subir a 1.75, 2, 2.5...).
 
-### ⚠️ Pantallas táctiles: sellar Windows con `SellarKioscoWindows.ps1`
+Es reversible (por si hay que volver a usar esa PC para otra cosa):
+```
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Policies\System" /v DisableTaskMgr /t REG_DWORD /d 0 /f
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer" /v NoWinKeys /t REG_DWORD /d 0 /f
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v TaskbarDa /t REG_DWORD /d 1 /f
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\EdgeUI" /v AllowEdgeSwipe /t REG_DWORD /d 1 /f
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Feeds" /v EnableFeeds /t REG_DWORD /d 1 /f
+```
+(desde una consola como administrador, y reiniciar Explorador o la PC).
 
-El modo `--kiosk` de Chrome tapa la ventana pero **no bloquea el sistema operativo**: en
-una pantalla táctil, deslizar desde el borde saca el panel de *Widgets / Noticias e
-intereses* de Windows por encima del kiosco sin tocar el teclado. Para tapar eso (y
-Alt+Tab, la tecla Windows, el Administrador de tareas):
+### Extra opcional: bloquear también el teclado con `SellarKioscoWindows.ps1`
 
-1. Clic derecho sobre `SellarKioscoWindows.ps1` → **Ejecutar con PowerShell** (tiene que
-   pedir permisos de administrador; si no, abrir PowerShell como administrador y correr
-   `powershell -ExecutionPolicy Bypass -File SellarKioscoWindows.ps1`).
-2. **Reiniciar la PC** (el bloqueo de teclado no se aplica hasta reiniciar).
-3. Después del reinicio, correr `AbrirTotemKiosco.bat` normalmente.
+`AbrirTotemKiosco.bat` ya resuelve el swipe/widgets. `SellarKioscoWindows.ps1` es un paso
+EXTRA solo si además querés bloquear Alt+Tab, Alt+F4, Ctrl+Esc y la tecla Windows a nivel
+driver de teclado — a diferencia de lo anterior, **esto sí necesita reiniciar la PC** para
+aplicarse:
+
+1. Clic derecho sobre `SellarKioscoWindows.ps1` → **Ejecutar con PowerShell** (o
+   `powershell -ExecutionPolicy Bypass -File SellarKioscoWindows.ps1` como administrador).
+2. Reiniciar la PC.
+3. Correr `AbrirTotemKiosco.bat` normalmente.
 
 Es reversible: `powershell -ExecutionPolicy Bypass -File SellarKioscoWindows.ps1 -Revertir`
 y reiniciar de nuevo. Ojo: mientras está aplicado, el teclado de esa PC queda mutilado a
-propósito (Alt+Tab, Alt+F4, Ctrl+Esc y las teclas Windows no responden) — usar el modo
-`-Revertir` antes de necesitar administrar el equipo normalmente.
+propósito — usar `-Revertir` antes de necesitar administrar el equipo normalmente.
 
 ## Código fuente
 
