@@ -60,6 +60,9 @@ $teclado     = 'HKLM:\SYSTEM\CurrentControlSet\Control\Keyboard Layout'
 $avanzado    = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced'
 $polEdgeUi   = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\EdgeUI'
 $polFeeds    = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Feeds'
+$polDsh      = 'HKLM:\SOFTWARE\Policies\Microsoft\Dsh'
+$polNotif    = 'HKCU:\SOFTWARE\Policies\Microsoft\Windows\Explorer'
+$stuckRects  = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\StuckRects3'
 
 function Ensure-Key($ruta) { if (-not (Test-Path $ruta)) { New-Item -Path $ruta -Force | Out-Null } }
 
@@ -67,14 +70,23 @@ if ($Revertir) {
   Write-Host '[kiosco] Revirtiendo...' -ForegroundColor Yellow
   $props = @(
     @($polSystem,'DisableTaskMgr'), @($polExplorer,'NoWinKeys'),
-    @($avanzado,'TaskbarAutoHideInTabletMode'), @($avanzado,'TaskbarDa'),
-    @($polEdgeUi,'AllowEdgeSwipe'), @($polFeeds,'EnableFeeds')
+    @($avanzado,'TaskbarDa'), @($polNotif,'DisableNotificationCenter'),
+    @($polEdgeUi,'AllowEdgeSwipe'), @($polFeeds,'EnableFeeds'),
+    @($polDsh,'AllowNewsAndInterests')
   )
   foreach ($r in $props) {
     Remove-ItemProperty -Path $r[0] -Name $r[1] -ErrorAction SilentlyContinue
   }
   Remove-ItemProperty -Path $teclado -Name 'Scancode Map' -ErrorAction SilentlyContinue
-  Write-Host '[kiosco] Revertido. REINICIAR para que el teclado y el swipe vuelvan a la normalidad.' -ForegroundColor Green
+  # Barra de tareas visible de nuevo (byte 8 de StuckRects3: 2=off).
+  if (Test-Path $stuckRects) {
+    $b = (Get-ItemProperty -Path $stuckRects).Settings
+    $b[8] = 2
+    Set-ItemProperty -Path $stuckRects -Name Settings -Value $b
+  }
+  Stop-Process -Name explorer -Force -ErrorAction SilentlyContinue
+  Start-Process explorer
+  Write-Host '[kiosco] Revertido. CERRAR SESION o REINICIAR para que el teclado y el swipe vuelvan a la normalidad.' -ForegroundColor Green
   exit 0
 }
 
@@ -106,10 +118,20 @@ $mapa = [byte[]](
 Set-ItemProperty -Path $teclado -Name 'Scancode Map' -Value $mapa -Type Binary
 Write-Host '  - Alt, Tab, Ctrl izq y Windows: anuladas a nivel driver'
 
-# --- Barra de tareas siempre oculta ---
-Ensure-Key $avanzado
-Set-ItemProperty -Path $avanzado -Name 'TaskbarAutoHideInTabletMode' -Value 1 -Type DWord
-Write-Host '  - Barra de tareas: oculta'
+# --- Barra de tareas siempre oculta (byte 8 de StuckRects3: 3=on) ---
+# `TaskbarAutoHideInTabletMode` NO sirve acá: solo aplica al modo tablet. El
+# auto-ocultar de verdad vive en ese byte de StuckRects3 (igual que Abuelo Julio).
+if (Test-Path $stuckRects) {
+  $bytes = (Get-ItemProperty -Path $stuckRects).Settings
+  $bytes[8] = 3
+  Set-ItemProperty -Path $stuckRects -Name Settings -Value $bytes
+  Write-Host '  - Barra de tareas: oculta automaticamente'
+}
+
+# --- Centro de notificaciones ---
+Ensure-Key $polNotif
+Set-ItemProperty -Path $polNotif -Name 'DisableNotificationCenter' -Value 1 -Type DWord
+Write-Host '  - Centro de notificaciones: bloqueado'
 
 # --- Edge-swipe táctil y Widgets/"Noticias e intereses" ---
 # En touch, deslizar desde el borde saca paneles del sistema por encima del
@@ -118,11 +140,23 @@ Ensure-Key $polEdgeUi
 Set-ItemProperty -Path $polEdgeUi -Name 'AllowEdgeSwipe' -Value 0 -Type DWord
 Ensure-Key $polFeeds
 Set-ItemProperty -Path $polFeeds -Name 'EnableFeeds' -Value 0 -Type DWord
+# En Windows 11 los Widgets NO se apagan con la política vieja de Windows Feeds:
+# la que manda es Dsh\AllowNewsAndInterests.
+Ensure-Key $polDsh
+Set-ItemProperty -Path $polDsh -Name 'AllowNewsAndInterests' -Value 0 -Type DWord
+Ensure-Key $avanzado
 Set-ItemProperty -Path $avanzado -Name 'TaskbarDa' -Value 0 -Type DWord
 Write-Host '  - Edge-swipe tactil y Widgets/Noticias e intereses: bloqueados'
 
+# --- Aplicar lo que se puede sin reiniciar ---
+Stop-Process -Name Widgets -Force -ErrorAction SilentlyContinue
+Stop-Process -Name explorer -Force -ErrorAction SilentlyContinue
+Start-Process explorer
+
 Write-Host ''
-Write-Host '[kiosco] Listo. HAY QUE REINICIAR para que el bloqueo de teclado tome efecto.' -ForegroundColor Green
+Write-Host '[kiosco] Listo. HAY QUE CERRAR SESION O REINICIAR para que tomen efecto' -ForegroundColor Green
+Write-Host '        el bloqueo de teclado Y el de gestos de borde (AllowEdgeSwipe).' -ForegroundColor Green
+Write-Host '        Reiniciar explorer NO alcanza para el swipe.' -ForegroundColor Green
 Write-Host '[kiosco] Ojo: con esto el teclado del equipo queda mutilado a propósito.' -ForegroundColor Yellow
 Write-Host '        Para administrarlo, revertir con -Revertir y reiniciar.' -ForegroundColor Yellow
 Write-Host '        El sellado definitivo es Assigned Access (ver el encabezado del script).' -ForegroundColor Yellow
