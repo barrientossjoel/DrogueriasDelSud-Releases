@@ -44,7 +44,7 @@ reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" /v Disa
 REM Combinaciones con la tecla Windows.
 reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer" /v NoWinKeys /t REG_DWORD /d 1 /f >nul
 REM Widgets / "Noticias e intereses" de Windows 11 (Dsh es la politica nueva;
-REM Windows Feeds es la vieja de Windows 10 — se ponen las dos).
+REM Windows Feeds es la vieja de Windows 10 - se ponen las dos).
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Dsh" /v AllowNewsAndInterests /t REG_DWORD /d 0 /f >nul
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Feeds" /v EnableFeeds /t REG_DWORD /d 0 /f >nul
 reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v TaskbarDa /t REG_DWORD /d 0 /f >nul
@@ -56,7 +56,7 @@ REM Reiniciar Explorer: aplica barra de tareas, notificaciones y widgets al toqu
 taskkill /f /im Widgets.exe >nul 2>&1
 taskkill /f /im explorer.exe >nul 2>&1
 start explorer.exe
-timeout /t 3 /nobreak >nul
+ping -n 4 127.0.0.1 >nul
 
 set "URL=https://drogueriadelsud.digitalimpulso.com/"
 set "FLAGS=--kiosk --user-data-dir=%LocalAppData%\DelSudTotemWebKiosk --force-device-scale-factor=1.5 --start-fullscreen --noerrdialogs --no-first-run --no-default-browser-check --disable-session-crashed-bubble --disable-translate --disable-features=TranslateUI --disable-pinch --overscroll-history-navigation=0 --autoplay-policy=no-user-gesture-required"
