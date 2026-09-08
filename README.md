@@ -13,8 +13,9 @@ dependencias de desarrollo.
 | Archivo | Para qué |
 |---|---|
 | `DelSudTotem.apk` | Instalar en una **tablet Android** como app de kiosco. |
-| `AbrirTotemKiosco.bat` | Abrir en una **PC/notebook Windows** el navegador en modo kiosco apuntando al tótem. Ya incluye el bloqueo de swipe/widgets. |
-| `SellarKioscoWindows.ps1` | Opcional, solo para bloquear ADEMÁS el teclado (Alt+Tab, tecla Windows) a nivel driver — ver abajo. |
+| `AbrirTotemKiosco.bat` | Abrir en una **PC/notebook Windows** el navegador en modo kiosco. Ya incluye el bloqueo de swipe/widgets. **Este es el único imprescindible.** |
+| `RestaurarNormal.bat` | Salir del kiosco y devolver la PC a modo normal. |
+| `SellarKiosco.bat` + `SellarKioscoWindows.ps1` | Opcional: bloquear ADEMÁS el teclado (Alt+Tab, tecla Windows). Los dos archivos van en la **misma carpeta**. |
 
 ## Android — `DelSudTotem.apk`
 
@@ -46,31 +47,33 @@ instala nada más, solo bloquea esos gestos y abre el navegador.
 Si la pantalla es muy grande y la interfaz se ve chica, editar el archivo con el Bloc de
 notas y ajustar el número en `--force-device-scale-factor=1.5` (subir a 1.75, 2, 2.5...).
 
-Es reversible (por si hay que volver a usar esa PC para otra cosa):
-```
-reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Policies\System" /v DisableTaskMgr /t REG_DWORD /d 0 /f
-reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer" /v NoWinKeys /t REG_DWORD /d 0 /f
-reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v TaskbarDa /t REG_DWORD /d 1 /f
-reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\EdgeUI" /v AllowEdgeSwipe /t REG_DWORD /d 1 /f
-reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Feeds" /v EnableFeeds /t REG_DWORD /d 1 /f
-```
-(desde una consola como administrador, y reiniciar Explorador o la PC).
+### Salir del kiosco — `RestaurarNormal.bat`
 
-### Extra opcional: bloquear también el teclado con `SellarKioscoWindows.ps1`
+El `.bat` del tótem **no se registra en el arranque de Windows**, así que reiniciar la PC ya
+te saca del kiosco. Pero el sellado del registro sobrevive al reinicio (esa es la idea): la
+barra de tareas queda oculta y los atajos bloqueados.
 
-`AbrirTotemKiosco.bat` ya resuelve el swipe/widgets. `SellarKioscoWindows.ps1` es un paso
-EXTRA solo si además querés bloquear Alt+Tab, Alt+F4, Ctrl+Esc y la tecla Windows a nivel
-driver de teclado — a diferencia de lo anterior, **esto sí necesita reiniciar la PC** para
-aplicarse:
+Para devolver la PC a modo normal del todo, correr `RestaurarNormal.bat` (pide permiso de
+administrador) y **reiniciar**. Cierra el vigilante y el navegador, y revierte todo el
+sellado: gestos, widgets, notificaciones, Administrador de tareas, teclas Windows, barra de
+tareas y el bloqueo de teclado.
 
-1. Clic derecho sobre `SellarKioscoWindows.ps1` → **Ejecutar con PowerShell** (o
-   `powershell -ExecutionPolicy Bypass -File SellarKioscoWindows.ps1` como administrador).
-2. Reiniciar la PC.
-3. Correr `AbrirTotemKiosco.bat` normalmente.
+### Extra opcional: bloquear también el teclado — `SellarKiosco.bat`
 
-Es reversible: `powershell -ExecutionPolicy Bypass -File SellarKioscoWindows.ps1 -Revertir`
-y reiniciar de nuevo. Ojo: mientras está aplicado, el teclado de esa PC queda mutilado a
-propósito — usar `-Revertir` antes de necesitar administrar el equipo normalmente.
+`AbrirTotemKiosco.bat` ya resuelve el swipe/widgets. Esto es un paso EXTRA solo si además
+querés bloquear Alt+Tab, Alt+F4, Ctrl+Esc y la tecla Windows a nivel driver de teclado:
+
+1. Bajar `SellarKiosco.bat` **y** `SellarKioscoWindows.ps1` a la **misma carpeta**.
+2. Doble clic en `SellarKiosco.bat` → aceptar el permiso de administrador.
+3. **Reiniciar la PC.**
+
+> El `.bat` existe justamente para no pelear con la política de ejecución de PowerShell ni
+> con la marca de "archivo descargado de internet" que Windows le pone a los `.ps1` bajados
+> de GitHub. Si el `.ps1` "no arranca" en una PC y en otra sí, es por eso: usá el `.bat`.
+
+Ojo: mientras está aplicado, el teclado de esa PC queda mutilado a propósito (Alt, Tab,
+Ctrl izquierdo y las teclas Windows no responden). Para administrarla de nuevo, correr
+`RestaurarNormal.bat` y reiniciar.
 
 ## Código fuente
 

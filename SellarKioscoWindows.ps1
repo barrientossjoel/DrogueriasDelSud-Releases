@@ -49,9 +49,15 @@ function Test-Admin {
     [Security.Principal.WindowsBuiltInRole]::Administrator)
 }
 
+# Auto-elevación (igual que AbueloJulio/scripts/lockdown-kiosko.ps1): pedir UAC y
+# relanzarse en vez de morir con un warning que nadie lee. El Scancode Map y las
+# políticas de EdgeUI/Dsh viven en HKLM, así que sin admin no hay nada que hacer.
 if (-not (Test-Admin)) {
-  Write-Warning 'Hay que ejecutarlo COMO ADMINISTRADOR (el Scancode Map es de máquina).'
-  exit 1
+  Write-Host '[kiosco] Pidiendo permisos de administrador...' -ForegroundColor Yellow
+  $argumentos = "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`""
+  if ($Revertir) { $argumentos += ' -Revertir' }
+  Start-Process powershell $argumentos -Verb RunAs
+  exit
 }
 
 $polSystem   = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Policies\System'
