@@ -1,3 +1,6 @@
-*.bat text eol=crlf
-*.cmd text eol=crlf
-*.ps1 text eol=crlf
+# Se bajan y se ejecutan directo en Windows: git no debe tocarles los saltos
+# de linea. Con "text eol=crlf" el blob se guarda en LF y raw.githubusercontent
+# sirve un .bat que cmd.exe no ejecuta bien.
+*.bat -text
+*.cmd -text
+*.ps1 -text
